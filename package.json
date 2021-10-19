@@ -8,6 +8,8 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "ar-rtc-sdk": "^4.2.1-fixed.5",
+    "ar-rtm-sdk": "^1.0.4-alpha.3",
     "core-js": "^3.6.5",
     "vue": "^2.6.11",
     "vue-router": "^3.2.0",
