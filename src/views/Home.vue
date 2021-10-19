@@ -20,6 +20,8 @@ export default {
       // 房主id：1234、
       // 路人id：4321、
       // 房间号：aaaa、
+      // 1.获取音频/视频输入设备列表、判断是否存在音频/视频设备、创建音频/视频轨道
+      // 2.创建 ArRTCClient 客户端实例
       localInvitation: null, // 通过 ArRTMClient.createLocalInvitation 创建的实例
       ArRTMClient: null,     // 通过 this.$ArRTM.createInstance 创建的RTM客户端实例
       ArRTCClient: null,     // 通过 this.$ArRTC.createClient 创建的客户端对象
@@ -32,13 +34,17 @@ export default {
         appid: 'b3228eb970c80d289454d3453c28c43d',
         channel: '1111',  // 频道
         uid: 'web' + Math.floor(Math.random() * 10000000) // 随机生成本地uid
+      },
+      localTracks: {
+        videoTrack: null,
+        audioTrack: null
       }
     }
   },
   created() {
     console.log('ArRTM:', this.$ArRTM)
     console.log('ArRTC:', this.$ArRTC)
-    // this.getRemoteUid(); // 获取远程用户 uid
+    this.getRemoteUid(); // 获取远程用户 uid
     this.getDevices();   // 获取音视频设备
     this.createTrack();  // 创建本地音视频轨道
   },
@@ -60,6 +66,8 @@ export default {
       ]);
       this.videoDevices = videoDevices;
       this.audioDevices = audioDevices;
+      console.log('视频输入列表：', this.audioDevices)
+
     },
 
 // 创建本地音视频轨道
@@ -72,16 +80,21 @@ export default {
     },
 
 // 创建 RTM 和 RTC 客户端对象
-    createClient() {
+    async createClient() {
       this.ArRTMClient = this.$ArRTM.createInstance(this.config.appid);
       this.ArRTCClient = this.$ArRTC.createClient({mode: 'rtc', codec: 'h264'});
+
+      // this.videoTrack.play("local_video");
+      // await this.ArRTCClient.publish([this.audioTrack,this.videoTrack]);
+
       // 监听远端用户发布音视频流
-      this.listenUserPublished();
+      // this.listenUserPublished();
       // 监听点对点消息
-      this.listenMessageFromPeer();
+      // this.listenMessageFromPeer();
       // 登录 RTM
       this.ArRTMClient.login({uid: this.config.uid}).then(() => {
         // 监听远端用户上下线
+        console.log('登录成功：')
         this.listenPeersOnlineStatusChanged();
         // 订阅人员上下线
         this.subscribePeersOnlineStatus();
@@ -109,7 +122,7 @@ export default {
         await this.ArRTCClient.subscribe(user, mediaType);
         if (mediaType === 'video') {
           // 播放远端视频 (传入一个dom元素id)
-          user.videoTrack.play('#remote_video');
+          user.videoTrack.play('remote_video');
         } else if (mediaType === 'audio') {
           // 播放远端音频 (音频不需要元素)
           user.audioTrack.play();
@@ -119,7 +132,10 @@ export default {
 
 // 监听远端用户上下线
     listenPeersOnlineStatusChanged() {
+      console.log('监听用户上下限', status)
+
       this.ArRTMClient.on('PeersOnlineStatusChanged', (status) => {
+
         const ONLINE = status[this.remoteUid] === 'ONLINE';
         // 如果对方在线 就发送呼叫邀请
         ONLINE && this.callRemote(this.remoteUid);
